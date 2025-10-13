@@ -1,0 +1,3 @@
+data_dir: ./data
+artifacts_dir: ./artifacts/food101
+ckpt_name: best.pth

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "food101"
+version = "0.1.0"
+description = "Food-101 classifier: training, inference, and UI"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.scripts]
+food101-train = "food101.train:main"
+food101-infer = "food101.infer:main"
+food101-app   = "food101.app:main"
