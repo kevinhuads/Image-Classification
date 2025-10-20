@@ -44,4 +44,4 @@ jobs:
           fi
 
       - name: Run tests
-        run: pytest -q
+        run: pytest -v
