@@ -8,9 +8,9 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
 from torch import amp
 
-from data import read_splits, build_transforms, make_datasets
-from model import build_resnet50
-from engine import train_one_epoch, validate, save_checkpoint, append_csv
+from .data import read_splits, build_transforms, make_datasets
+from .model import build_resnet50
+from .engine import train_one_epoch, validate, save_checkpoint, append_csv
 
 def set_seed(seed: int = 3):
     random.seed(seed)

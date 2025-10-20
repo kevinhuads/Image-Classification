@@ -1,0 +1,4 @@
+[console_scripts]
+food101-app = food101.app:main
+food101-infer = food101.infer:main
+food101-train = food101.train:main

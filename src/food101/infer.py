@@ -1,7 +1,7 @@
 # infer.py
 import argparse
 from PIL import Image
-from utils import load_model_and_meta, predict_pil, topk_labels
+from .utils import load_model_and_meta, predict_pil, topk_labels
 
 def main():
     parser = argparse.ArgumentParser()
