@@ -5,6 +5,7 @@ src/food101/app.py
 src/food101/config.py
 src/food101/data.py
 src/food101/engine.py
+src/food101/eval.py
 src/food101/infer.py
 src/food101/model.py
 src/food101/styles.py
@@ -15,4 +16,8 @@ src/food101.egg-info/SOURCES.txt
 src/food101.egg-info/dependency_links.txt
 src/food101.egg-info/entry_points.txt
 src/food101.egg-info/top_level.txt
+tests/test_cli_parse_only.py
+tests/test_config_and_imports.py
+tests/test_data_contract.py
+tests/test_infer_api_contract.py
 tests/test_project_smoke.py
