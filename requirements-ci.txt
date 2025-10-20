@@ -36,6 +36,7 @@ pydeck==0.9.1
 Pygments==2.19.2
 pyparsing==3.2.5
 pytest==8.4.2
+pytest-cov>=4.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==6.0.3
