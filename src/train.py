@@ -19,7 +19,7 @@ def set_seed(seed: int = 3):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train head-only or full fine-tune on Food-101 (refactored)")
-    p.add_argument("--data_folder", default=r"D:\Python\food-101", help="root dataset folder")
+    p.add_argument("--data_folder", default=r"data", help="root dataset folder")
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--epochs", type=int, default=3)
     p.add_argument("--lr", type=float, default=3e-4)

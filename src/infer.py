@@ -6,7 +6,7 @@ from .utils import load_model_and_meta, predict_pil, topk_labels
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("image_path", help="Path to input image (jpg/png)")
-    parser.add_argument("--ckpt", default=r"D:\Python\food-101\headonly_food101.pth")
+    parser.add_argument("--ckpt", default=r"artifacts\headonly_food101.pth")
     parser.add_argument("--topk", type=int, default=5)
     args = parser.parse_args()
 
