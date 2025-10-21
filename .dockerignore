@@ -1,0 +1,33 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+*.pdb
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+wheelhouse/
+
+# VCS and CI
+.git/
+.github/
+
+# OS / editor files
+.DS_Store
+*.swp
+*.swo
+
+# Tests and docs (optional if not needed in runtime)
+tests/
+docs/

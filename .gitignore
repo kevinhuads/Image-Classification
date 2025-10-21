@@ -2,3 +2,4 @@ __pycache__/
 artifacts/
 .ipynb_checkpoints/ 
 .venv/
+.data/
