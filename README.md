@@ -1,207 +1,171 @@
-# Image-Classification
+# Image Classification
 
-A compact, reproducible image classification project using the Food-101 dataset and modern PyTorch best practices. This repository provides a training and inference pipeline, developer tools, and a lightweight demo application.
+A Python-based project for training, evaluating, and experimenting with image classification models. The repository includes reproducible environments, Jupyter notebooks for exploration, and a structured codebase for development and testing.
 
----
+## Key Features
 
-## Contents
+- Jupyter notebooks for rapid experimentation and visualization
+- Reproducible environments via `requirements.txt` and a Dockerfile
+- Organized project layout with `src/`, `configs/`, and `tests/`
+- Lightweight app entry point (`app.py`) for demos or quick runs
+- CI-friendly dependency pinning via `requirements-ci.txt`
 
-- **Overview** - what this repository implements and its intended use.
-- **Quickstart** - a minimal set of commands to reproduce the baseline locally.
-- **Installation** - environment and dependency management.
-- **Data** - how to obtain and prepare the Food-101 dataset used in the repo.
-- **Usage** - training, evaluation, inference, and demo commands.
-- **Configuration** - where runtime settings live and how to override them.
-- **Project layout** - explanation of important files and directories.
-- **Reproducibility** - how experiments are tracked and artifacts stored.
+## Project Structure
 
----
+```
+.
+├─ .dockerignore           # Files/directories excluded from Docker context
+├─ .gitignore              # Git ignore rules
+├─ .github/                # GitHub configuration (e.g., workflows, templates)
+├─ Dockerfile              # Containerized environment
+├─ README.md               # You are here
+├─ app.py                  # Minimal entry point (demo / script runner)
+├─ configs/                # Configuration files (e.g., experiment settings)
+├─ notebooks/              # Jupyter notebooks for analysis and prototyping
+├─ pyproject.toml          # Project metadata and build config (PEP 621)
+├─ requirements-ci.txt     # CI-focused dependency pinning
+├─ requirements.txt        # Main project dependencies
+├─ src/                    # Source code
+└─ tests/                  # Test suite
+```
 
-## Overview
+## Getting Started
 
-This project implements an image classification pipeline for the Food-101 dataset. The codebase is structured to separate library logic (model, data, training loop) from CLI entry points and demos. It is designed for research and development: to run experiments, compare backbones, and produce reproducible artifacts.
+### 1) Prerequisites
 
-Intended audience: researchers and engineers who want a compact baseline to iterate on image-classification experiments.
+- Python 3.11
+- pip 
 
-
-## Quickstart (minimum steps)
-
-> The repository assumes a Unix-like environment and a Python 3.10+ interpreter with access to pip or a project manager (Poetry).
-
-1. Clone the repository:
+### 2) Clone the repository
 
 ```bash
 git clone https://github.com/kevinhuads/Image-Classification.git
 cd Image-Classification
 ```
 
-2. Create a virtual environment and install dependencies:
+### 3) Set up a virtual environment
+
+Using `venv`:
 
 ```bash
 python -m venv .venv
+# macOS/Linux
 source .venv/bin/activate
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
+
+### 4) Install dependencies
+
+```bash
+pip install --upgrade pip
 pip install -r requirements.txt
-# or, if the project uses pyproject.toml with an installer, use:
-# pip install -e .
 ```
 
-3. Download and prepare the Food-101 dataset (see **Data** section).
-
-4. Run a smoke training run (config shown as example):
-
-```bash
-python train.py --config config.yaml
-```
-
-5. Run inference on a single image:
-
-```bash
-python infer.py --checkpoint artifacts/checkpoints/best.pth --image tests/data/sample.jpg --topk 5
-```
-
-The Quickstart commands above are intentionally minimal. For more control, consult the **Usage** and **Configuration** sections below.
-
-
-## Installation
-
-Recommended options:
-
-- **pip** (requirements file): `pip install -r requirements.txt`
-- **Editable install** for development: `pip install -e .`
-- **Poetry** (if a `pyproject.toml` and `poetry.lock` exist): `poetry install`.
-
-Use a GPU-enabled environment if you plan to train the baseline model in reasonable time. The repository supports CPU-only execution for evaluation and small smoke tests.
-
-
-## Data
-
-### Dataset
-
-This repository is configured for the Food-101 dataset. The dataset itself is not included in the repository due to licensing and size constraints.
-
-A helper script `scripts/download_food101.py` (or equivalent) is provided to fetch and verify the dataset. The expected layout after preparation is:
-
-```
-data/
-  food-101/
-    images/
-      apple_pie/
-        00000001.jpg
-        ...
-    meta/
-      train.txt
-      test.txt
-```
-
-Place the dataset root path in the configuration (`data.root`) or supply it via CLI `--data-root`.
-
-### Preprocessing
-
-Training and evaluation use transforms that match the pretrained backbone normalization (ImageNet mean/std) and recommended resizing/cropping rules. See `src/food101/data.py` for explicit transform definitions.
 
 
 ## Usage
 
-### Training
+### Notebooks
 
-The primary training entry point is `train.py`. Basic usage:
+- Explore and prototype in `notebooks/`.
+- Recommend using the created kernel (`image-classification`) for consistent dependencies.
 
-```bash
-python train.py --config config.yaml
-```
+### Scripts and app
 
-Key CLI options:
-
-- `--config` - path to YAML configuration file.
-- `--checkpoint-dir` - directory where checkpoints and artifacts are saved.
-- `--device` - `cuda` / `cpu` / `mps` (if supported).
-- `--resume` - path to a checkpoint to resume training.
-
-Training implements mixed-precision, checkpointing (best + last), seed logging, and experiment metadata preservation.
-
-
-### Evaluation
-
-A standalone `eval.py` computes metrics on a held-out test set and exports artifacts:
-
-```bash
-python eval.py --checkpoint artifacts/checkpoints/best.pth --data-root /path/to/data --out-dir artifacts/eval
-```
-
-The evaluation script emits per-class precision/recall/F1, a confusion matrix (CSV + image), and calibration diagnostics.
-
-
-### Inference
-
-`infer.py` performs prediction on single images or folders and writes results to JSON or CSV.
-
-```bash
-python infer.py --checkpoint artifacts/checkpoints/best.pth --image tests/data/sample.jpg --topk 5 --output preds.json
-```
-
-Options include `--topk`, `--confidence-threshold`, and `--batch-size` for folder inference.
-
-
-### Demo (Streamlit)
-
-A lightweight demo UI is provided at `app.py`. To run locally:
+- The repository includes a minimal `app.py`. You can use it as a starting point for quick inference demos, utility scripts, or CLI entry points:
 
 ```bash
 streamlit run app.py
 ```
 
-The demo supports image upload, URL ingestion, and visual explanations (Grad-CAM) for the selected checkpoint.
+- Explore the `src/` directory for reusable modules and components. Organize your training/evaluation workflows there.
 
+### YAML-first commands for src modules
 
-## Configuration
+Prefer keeping all settings in YAML files under `configs/`, and invoke modules with only `--config` (CLI flags remain optional overrides if you need them).
 
-Runtime configuration is centralized in `config.yaml`. The project supports overriding configuration values via CLI arguments (for example, `--data.root` and `--trainer.max_epochs`), or by using an alternative config file.
+- Training:
+  ```bash
+  python -m src.train --config configs/train.yaml
+  ```
 
-A representative `config.yaml` contains keys for:
+- Evaluation:
+  ```bash
+  python -m src.eval --config configs/eval.yaml
+  ```
 
-- `data` - root path, batch size, workers, transforms.
-- `model` - backbone name, pretrained flag, number of classes.
-- `trainer` - optimizer, learning-rate schedule, epochs, mixed-precision.
-- `logging` - experiment name, output directories, tracking backend.
+- Inference:
+  ```bash
+  python -m src.infer --config configs/infer.yaml
+  ```
 
+Minimum keys expected in the YAMLs:
+- train.yaml: data_folder, output_folder, epochs, batch_size, lr, weight_decay, num_workers, seed, device, pretrained, freeze_backbone
+- eval.yaml: checkpoint, data_root, out_dir, batch_size, num_workers, device, num_classes (optional)
+- infer.yaml: image_path, ckpt, topk
 
-## Project layout
+### Configurations
 
-```
-.
-├─ README.md                # this file
-├─ config.yaml              # default runtime configuration
-├─ requirements.txt         # pinned runtime deps for reproducibility
-├─ pyproject.toml           # optional; packaging metadata
-├─ train.py                 # CLI wrapper for training
-├─ infer.py                 # CLI wrapper for inference
-├─ eval.py                  # evaluation and metrics export
-├─ app.py                   # Streamlit demo
-├─ scripts/                 # utility scripts (data download, conversion)
-├─ src/food101/             # library code: data, model, engine, utils
-└─ tests/                   # unit and smoke tests
-```
+- Store and version your experiment settings in `configs/`.
+- Add new configuration files as needed (e.g., YAML/JSON for datasets, model hyperparameters, and training schedules).
 
+## Docker
 
-## Reproducibility and artifacts
-
-Training runs produce reproducible artifacts saved under the configured `artifacts/` directory. Each run preserves:
-
-- `checkpoints/` - `best.pth`, `last.pth` (and optional epoched checkpoints).
-- `classes.json` - ordered label list used by the checkpoint.
-- `config_used.yaml` - the fully resolved configuration for the run.
-- `env.txt` - environment snapshot (`pip freeze`) captured after training.
-- `metrics/` - CSV and plots for loss/accuracy, confusion matrix, and other diagnostics.
-
-Each checkpoint includes metadata (git commit hash, config snapshot, class labels) to ensure correct usage during inference.
-
-
-## Testing and quality
-
-The repository includes a small test suite (`tests/`) with unit and smoke tests. Run the full test suite with:
+Build an image:
 
 ```bash
-pytest -q
+docker build -t image-classification:latest .
 ```
 
-Pre-commit hooks for code formatting and linting are recommended (see `.pre-commit-config.yaml`).
+Run interactively and mount the project:
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/workspace \
+  -w /workspace \
+  image-classification:latest \
+  bash
+```
+
+Optionally, run the app inside the container:
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/workspace \
+  -w /workspace \
+  image-classification:latest \
+  python app.py
+```
+
+If your app serves a web UI/API, expose a port (replace 7860 with your app’s port):
+
+```bash
+docker run --rm -it -p 7860:7860 \
+  -v "$PWD":/workspace \
+  -w /workspace \
+  image-classification:latest
+```
+
+## Testing
+
+Run the test suite (assuming `pytest` is included in the dependencies):
+
+```bash
+pytest -v
+```
+
+Place new tests under `tests/` and follow a clear naming convention (e.g., `test_*.py`).
+
+## Data Management
+
+- Store datasets outside the repository or under a dedicated `data/` directory (ignored by Git if large).
+- Consider using symlinks, environment variables, or configuration files in `configs/` to point to dataset locations.
+- For large files, prefer external storage or Git LFS.
+
+## Reproducibility Tips
+
+- Pin dependencies where possible (see `requirements-ci.txt` for CI).
+- Keep configurations in version control (`configs/`).
+- Record random seeds in your training/evaluation scripts.
+- Capture environment info (e.g., `pip freeze`, `python --version`) in experiment logs.

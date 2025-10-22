@@ -13,7 +13,7 @@ from styles import css
 # Default checkpoint: prefer environment override so CI / users can set their own path
 DEFAULT_CKPT = os.environ.get(
     "FOOD101_CKPT",
-    os.path.join("artifacts", "checkpoints", "headonly_food101.pth")
+    os.path.join("artifacts", "refactored_best.pth")
 )
 
 
@@ -39,7 +39,7 @@ def _build_sidebar() -> Tuple[object, str]:
 def _render_left_column(image: Image.Image):
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Input image</div>', unsafe_allow_html=True)
-    st.image(image, caption=None, use_column_width=True)
+    st.image(image, caption=None, width = 'stretch')
     st.markdown("</div>", unsafe_allow_html=True)
 
 
