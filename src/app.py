@@ -1,4 +1,3 @@
-# src/food101/app.py
 import os
 import io
 from typing import Tuple, List
@@ -8,8 +7,8 @@ import altair as alt
 import streamlit as st
 from PIL import Image
 
-from .utils import load_model_and_meta, predict_pil, topk_labels
-from .styles import css
+from utils import load_model_and_meta, predict_pil, topk_labels
+from styles import css
 
 # Default checkpoint: prefer environment override so CI / users can set their own path
 DEFAULT_CKPT = os.environ.get(

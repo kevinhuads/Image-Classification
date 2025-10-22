@@ -1,43 +1,97 @@
-# train.py
 import os
 import argparse
 import random
 import numpy as np
 import torch
+from pathlib import Path
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
 from torch import amp
 
-from .data import read_splits, build_transforms, make_datasets
-from .model import build_resnet50
-from .engine import train_one_epoch, validate, save_checkpoint, append_csv
+from config_loader import load_yaml, merge_yaml_with_cli
+from data import read_splits, build_transforms, make_datasets
+from model import build_resnet50
+from engine import train_one_epoch, validate, save_checkpoint, append_csv
+
+
+def build_parser():
+    p = argparse.ArgumentParser()
+    p.add_argument("--config", type=str, default=None, help="path to YAML config")
+    p.add_argument("--data_folder", type=str, default=None, help="root dataset folder")
+    p.add_argument("--output_folder", type=str, default=None, help="output folder")
+    p.add_argument("--batch_size", type=int, default=None)
+    p.add_argument("--epochs", type=int, default=None)
+    p.add_argument("--lr", type=float, default=None)
+    p.add_argument("--weight_decay", type=float, default=None)
+    p.add_argument("--num_workers", type=int, default=None)
+    p.add_argument("--freeze_backbone", action="store_true", default=None)
+    p.add_argument("--pretrained", action="store_true", default=None)
+    p.add_argument("--output", type=str, default=None)
+    p.add_argument("--device", type=str, default=None)
+    p.add_argument("--seed", type=int, default=None)
+    return p
+
+def apply_yaml_to_args(args, yaml_cfg):
+    """
+    For every key in yaml_cfg, set attr on args only if CLI left it None.
+    This gives CLI priority when a user explicitly overrides a YAML value.
+    """
+    for k, v in (yaml_cfg.items() if yaml_cfg else []):
+        if not hasattr(args, k):
+            # ignore unknown keys or add mapping if you renamed CLI args
+            continue
+        if getattr(args, k) is None:
+            setattr(args, k, v)
+    return args
+
+def resolve_paths(args):
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]
+    if args.data_folder is None:
+        raise ValueError("data_folder must be provided (via CLI or --config).")
+    data_folder = Path(args.data_folder).expanduser()
+    if not data_folder.is_absolute():
+        data_folder = (PROJECT_ROOT / data_folder).resolve()
+    args.data_folder = str(data_folder)
+
+    # coerce numeric fields that may come from YAML as strings
+    if args.seed is not None:
+        args.seed = int(args.seed)
+    if args.num_workers is not None:
+        args.num_workers = int(args.num_workers)
+    if args.batch_size is not None:
+        args.batch_size = int(args.batch_size)
+    if args.epochs is not None:
+        args.epochs = int(args.epochs)
+    if args.lr is not None:
+        args.lr = float(args.lr)
+    if args.weight_decay is not None:
+        args.weight_decay = float(args.weight_decay)
+    return args
+
 
 def set_seed(seed: int = 3):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-
-def parse_args():
-    p = argparse.ArgumentParser(description="Train head-only or full fine-tune on Food-101 (refactored)")
-    p.add_argument("--data_folder", default=r"data", help="root dataset folder")
-    p.add_argument("--batch_size", type=int, default=64)
-    p.add_argument("--epochs", type=int, default=3)
-    p.add_argument("--lr", type=float, default=3e-4)
-    p.add_argument("--weight_decay", type=float, default=1e-2)
-    p.add_argument("--num_workers", type=int, default=4)
-    p.add_argument("--freeze_backbone", action="store_true", help="freeze pretrained backbone (head-only)")
-    p.add_argument("--pretrained", action="store_true", help="use ImageNet pretrained weights")
-    p.add_argument("--output", default=None, help="path to save best checkpoint (defaults inside data_folder)")
-    return p.parse_args()
-
+    
 def main():
-    args = parse_args()
-    set_seed(3)
+    
+    
+    parser = build_parser()
+    args = parser.parse_args()
+    
+    yaml_cfg = {}
+    if args.config:
+        yaml_cfg = load_yaml(args.config)
 
-    data_folder = args.data_folder
-    image_folder = os.path.join(data_folder, "images")
-    meta_folder = os.path.join(data_folder, "meta")
-    os.makedirs(data_folder, exist_ok=True)
+    args = apply_yaml_to_args(args, yaml_cfg)
+    args = resolve_paths(args)
+    set_seed(args.seed)
+
+    image_folder = os.path.join(args.data_folder, "images")
+    meta_folder = os.path.join(args.data_folder, "meta")
+    os.makedirs(args.output_folder, exist_ok=True)
+
 
     train_list, test_list = read_splits(meta_folder)
     train_tf, val_tf = build_transforms()
@@ -66,8 +120,8 @@ def main():
     scheduler = OneCycleLR(optimizer, max_lr=args.lr,
                            steps_per_epoch=len(train_loader), epochs=args.epochs)
 
-    output_path = args.output or os.path.join(data_folder, "refactored_best.pth")
-    csv_path = os.path.join(data_folder, "refactored_results.csv")
+    output_path = os.path.join(args.output_folder, "refactored_best.pth")
+    csv_path = os.path.join(args.output_folder, "refactored_results.csv")
 
     best_acc = 0.0
     for epoch in range(1, args.epochs + 1):

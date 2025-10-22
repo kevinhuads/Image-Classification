@@ -1,0 +1,3 @@
+image_path: ./data/food-101/images/waffles/98131.jpg
+ckpt: artifacts/checkpoints/headonly_food101.pth
+topk: 5

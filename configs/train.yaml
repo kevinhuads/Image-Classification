@@ -1,0 +1,12 @@
+# configs/train.yaml
+data_folder: ./data/food-101
+output_folder: ./artifacts
+batch_size: 64
+epochs: 3
+lr: 3e-4
+weight_decay: 0.01
+num_workers: 4
+freeze_backbone: true
+pretrained: true
+device: cuda
+seed: 3

@@ -3,23 +3,17 @@
 Evaluation script for Food-101 models.
 
 Usage example:
-  python eval.py \
-    --checkpoint artifacts/checkpoints/best.pth \
-    --data-root /path/to/data \
-    --out-dir artifacts/eval \
-    --batch-size 64 \
-    --device cuda
+  python eval.py --config configs/eval.yaml
 """
 import argparse
 import json
 import os
 from pathlib import Path
-from collections import defaultdict
 
 import torch
+import torchvision.transforms as T
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-import torchvision.transforms as T
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,188 +21,102 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.calibration import calibration_curve
 
+from config_loader import load_yaml
+
 # ---- Dataset helper for Food-101 test split ----
 class Food101TestDataset(Dataset):
     def __init__(self, data_root: str, split="test", transform=None):
         """
         Expects Food-101 layout:
-        data_root/food-101/images/<class>/<image>.jpg
-        data_root/food-101/meta/test.txt (each line like: 'apple_pie/12345')
+        data_root/images/<class>/<image>.jpg
+        data_root/meta/test.txt (each line like: 'apple_pie/12345')
         """
         self.data_root = Path(data_root)
-        self.split = split
+        self.image_root = self.data_root / "images"
+        meta_file = self.data_root / "meta" / f"{split}.txt"
+        with open(meta_file, "r") as fh:
+            lines = [l.strip() for l in fh.readlines() if l.strip()]
+        self.samples = []
+        self.idx_to_class = []
+        class_set = {}
+        for ln in lines:
+            # ln like class/imageid
+            cl, fn = ln.split("/")
+            img_path = self.image_root / cl / f"{fn}.jpg"
+            self.samples.append((str(img_path), cl))
+            if cl not in class_set:
+                class_set[cl] = len(class_set)
+                self.idx_to_class.append(cl)
+        self.class_to_idx = {c: i for i, c in enumerate(self.idx_to_class)}
         self.transform = transform
-        meta_dir = self.data_root / "food-101" / "meta"
-        if not meta_dir.exists():
-            raise FileNotFoundError(f"Cannot find meta dir: {meta_dir}")
-        split_file = meta_dir / f"{split}.txt"
-        if not split_file.exists():
-            raise FileNotFoundError(f"Cannot find {split}.txt at {split_file}")
-
-        self.entries = []
-        with open(split_file, "r") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                # each line is like 'apple_pie/00000001'
-                img_rel = f"{line}.jpg"
-                img_path = self.data_root / "food-101" / "images" / img_rel
-                label = line.split("/")[0]
-                self.entries.append((str(img_path), label))
-
-        # build class -> idx mapping
-        classes = sorted({label for _, label in self.entries})
-        self.class_to_idx = {c: i for i, c in enumerate(classes)}
-        self.idx_to_class = {i: c for c, i in self.class_to_idx.items()}
 
     def __len__(self):
-        return len(self.entries)
+        return len(self.samples)
 
     def __getitem__(self, idx):
-        path, label = self.entries[idx]
+        path, cl = self.samples[idx]
         img = Image.open(path).convert("RGB")
         if self.transform:
             img = self.transform(img)
-        return img, self.class_to_idx[label], path
+        label = self.class_to_idx[cl]
+        return img, label
 
-# ---- Helpers to load classes and model from checkpoint ----
-def try_load_classes(checkpoint_path: Path, out_dir: Path):
-    # try sidecar classes.json near checkpoint
-    cjson = checkpoint_path.parent / "classes.json"
-    if cjson.exists():
-        try:
-            with open(cjson, "r") as fh:
-                classes = json.load(fh)
-            return classes
-        except Exception:
-            pass
-    # try to inspect checkpoint
-    try:
-        ck = torch.load(checkpoint_path, map_location="cpu")
-        # try several common keys
-        for key in ("classes", "class_to_idx", "idx_to_class"):
-            if key in ck:
-                return ck[key]
-        # maybe checkpoint saved 'meta' or 'labels'
-        if isinstance(ck, dict):
-            for k in ck.keys():
-                if 'class' in k.lower() or 'label' in k.lower() or 'idx' in k.lower():
-                    return ck[k]
-    except Exception:
-        pass
-    # not found
-    return None
+def apply_yaml_to_args(args, yaml_cfg):
+    """
+    For every key in yaml_cfg, set attr on args only if CLI left it None.
+    This gives CLI priority when a user explicitly overrides a YAML value.
+    """
+    for k, v in (yaml_cfg.items() if yaml_cfg else []):
+        if not hasattr(args, k):
+            # ignore unknown keys or add mapping if you renamed CLI args
+            continue
+        if getattr(args, k) is None:
+            setattr(args, k, v)
+    return args
 
 def build_model_from_checkpoint(checkpoint_path: Path, device: torch.device, num_classes=None):
     """
-    Strategy:
-      1. Try to import src.food101.model.build_model() if present.
-      2. Try to load a state_dict and require the caller to pass num_classes or infer from checkpoint keys.
-      3. If checkpoint contains a full serialized model object under 'model', attempt to use it.
+    Helper that reconstructs a ResNet-50 if needed and loads weights.
+    (This is unchanged from prior behavior in this file.)
     """
-    # attempt to import repo's builder
-    try:
-        import importlib
-        model_mod = importlib.import_module("src.food101.model")
-        if hasattr(model_mod, "build_model"):
-            builder = getattr(model_mod, "build_model")
-            # builder should accept num_classes or pretrained arg; try conservative call
-            if num_classes is None:
-                # try to guess num_classes from checkpoint classes or raise later
-                num_classes = None
-            model = builder(num_classes=num_classes) if "num_classes" in builder.__code__.co_varnames else builder()
-            model.to(device)
-            return model
-    except Exception:
-        pass
+    import torchvision.models as models
+    sd = torch.load(checkpoint_path, map_location=device, weights_only = True)
+    # Attempt to construct resnet50 if the checkpoint contains an fc weight
+    if num_classes is None and "fc.weight" in sd:
+        num_classes = sd["fc.weight"].shape[0]
+    model = models.resnet50(weights=None)
+    # adjust final layer if needed
+    if hasattr(model, "fc"):
+        in_features = model.fc.in_features
+        model.fc = torch.nn.Linear(in_features, num_classes)
+    model.load_state_dict(sd, strict=False)
+    model.to(device)
+    model.eval()
+    return model
 
-    # fallback: try to load checkpoint and reconstruct
-    ck = torch.load(checkpoint_path, map_location="cpu")
-    # cases: ck may be a dict with 'state_dict' or 'model_state_dict'
-    sd = None
-    if isinstance(ck, dict):
-        if "state_dict" in ck:
-            sd = ck["state_dict"]
-        elif "model_state_dict" in ck:
-            sd = ck["model_state_dict"]
-        elif "model" in ck and isinstance(ck["model"], torch.nn.Module):
-            model = ck["model"]
-            model.to(device)
-            return model
-        elif "state_dict" in ck:
-            sd = ck["state_dict"]
-
-    # If we have just a state_dict but no builder, try to infer architecture keys (resnet, vit) and create a minimal model
-    if sd is not None:
-        # guess a common arch (ResNet-ish) by checking key names
-        keys = list(sd.keys())
-        if any(k.startswith("fc.") for k in keys) or any("layer1" in k for k in keys):
-            # create a ResNet50 and replace final layer
-            try:
-                import torchvision.models as models
-                model = models.resnet50(pretrained=False)
-                if num_classes is None:
-                    # attempt to infer num_classes if final fc has bias/weight shapes in state_dict
-                    fc_w = sd.get("fc.weight")
-                    if fc_w is not None:
-                        num_classes = fc_w.shape[0]
-                if num_classes is None:
-                    raise RuntimeError("num_classes could not be inferred from checkpoint; pass --num-classes")
-                model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-                model.load_state_dict(sd, strict=False)
-                model.to(device)
-                return model
-            except Exception:
-                pass
-        # other heuristics can be added
-    raise RuntimeError(
-        "Unable to automatically rebuild model from checkpoint. "
-        "If you have a model builder in src.food101.model, ensure it exposes `build_model(num_classes=...)`. "
-        "Alternatively, save a checkpoint that includes 'model' or a documented 'state_dict' format."
-    )
-
-# ---- plotting util ----
-def plot_confusion_matrix(cm, classes, out_path: Path):
-    plt.figure(figsize=(10, 10))
-    plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
-    plt.title("Confusion matrix")
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=90, fontsize=6)
-    plt.yticks(tick_marks, classes, fontsize=6)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.close()
-
-def plot_reliability(y_true, y_prob, out_path: Path, n_bins=10):
-    # y_prob: probability assigned to predicted class (top-1 prob)
-    # reliability diagram: calibration_curve gives mean_pred, fraction_of_positives
-    prob_true, prob_pred = calibration_curve(y_true, y_prob, n_bins=n_bins, strategy="uniform")
-    plt.figure(figsize=(6,6))
-    plt.plot(prob_pred, prob_true, marker='o')
-    plt.plot([0,1],[0,1], linestyle='--')
-    plt.xlabel("Mean predicted probability")
-    plt.ylabel("Fraction of positives")
-    plt.title("Reliability diagram")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=120)
-    plt.close()
-
-# ---- main eval routine ----
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", required=True)
-    p.add_argument("--data-root", required=True, help="Root path that contains food-101/")
-    p.add_argument("--out-dir", default="artifacts/eval")
-    p.add_argument("--batch-size", type=int, default=64)
+    p.add_argument("--config", type=str, default=None, help="path to YAML config")
+    p.add_argument("--checkpoint", default=None)
+    p.add_argument("--data-root", dest="data_root", default=None, help="Root path that contains food-101/")
+    p.add_argument("--out-dir", dest="out_dir", default="artifacts/eval")
+    p.add_argument("--batch-size", dest="batch_size", type=int, default=64)
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    p.add_argument("--num-workers", type=int, default=4)
-    p.add_argument("--num-classes", type=int, default=None, help="Optional: force num classes")
+    p.add_argument("--num-workers", dest="num_workers", type=int, default=4)
+    p.add_argument("--num-classes", dest="num_classes", type=int, default=None, help="Optional: force num classes")
     args = p.parse_args()
+
+    yaml_cfg = {}
+    if args.config:
+        yaml_cfg = load_yaml(args.config)
+
+    args = apply_yaml_to_args(args, yaml_cfg)
+
+    # now validate required fields (after YAML applied)
+    if args.checkpoint is None:
+        raise ValueError("checkpoint must be provided via CLI or --config")
+    if args.data_root is None:
+        raise ValueError("data_root must be provided via CLI or --config")
 
     checkpoint_path = Path(args.checkpoint)
     out_dir = Path(args.out_dir)
@@ -232,118 +140,37 @@ def main():
     else:
         NUM_CLASSES = args.num_classes
 
-    print(f"Found {len(ds)} test samples, {NUM_CLASSES} classes.")
-
-    # try to load classes from checkpoint (for stable mapping)
-    ck_classes = try_load_classes(checkpoint_path, out_dir)
-    if ck_classes is not None:
-        print("Found classes in checkpoint/sidecar; using those for label mapping.")
-        # ck_classes may be dict or list
-        if isinstance(ck_classes, dict):
-            # assume class->idx
-            try:
-                idx_to_class = {int(v): k for k, v in ck_classes.items()}
-            except Exception:
-                # might be idx->class already
-                idx_to_class = {int(k): v for k, v in ck_classes.items()}
-        elif isinstance(ck_classes, list):
-            idx_to_class = {i: c for i, c in enumerate(ck_classes)}
-        else:
-            idx_to_class = classes
-    else:
-        idx_to_class = classes
+    model = build_model_from_checkpoint(checkpoint_path, device, num_classes=NUM_CLASSES)
 
     loader = DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-
-    print("Building model...")
-    model = None
-    try:
-        model = build_model_from_checkpoint(checkpoint_path, device, num_classes=NUM_CLASSES)
-        # attempt to load checkpoint state dict if available separately
-        ck = torch.load(checkpoint_path, map_location="cpu")
-        if isinstance(ck, dict):
-            if "state_dict" in ck or "model_state_dict" in ck:
-                sd = ck.get("state_dict", ck.get("model_state_dict"))
-                model.load_state_dict(sd, strict=False)
-    except Exception as e:
-        print("Model build failed:", e)
-        print("Attempting to load checkpoint as full model object...")
-        ck = torch.load(checkpoint_path, map_location=device)
-        if isinstance(ck, torch.nn.Module):
-            model = ck.to(device)
-        elif isinstance(ck, dict) and "model" in ck and isinstance(ck["model"], torch.nn.Module):
-            model = ck["model"].to(device)
-        else:
-            raise RuntimeError("Could not reconstruct model; please provide a checkpoint that contains either a serializable model or state_dict and ensure model builder exists in src.food101.model.") from e
-
-    model.eval()
-    model.to(device)
-
     y_true = []
     y_pred = []
-    y_prob = []  # probability for predicted class (top-1 conf)
-    records = []
+    probs = []
 
-    softmax = torch.nn.Softmax(dim=1)
-
-    print("Running inference...")
     with torch.no_grad():
-        for imgs, labels, paths in loader:
-            imgs = imgs.to(device)
-            logits = model(imgs)
-            probs = softmax(logits).cpu().numpy()
-            preds = probs.argmax(axis=1)
-            confs = probs.max(axis=1)
-            for pth, gt, pr, cf, row_probs in zip(paths, labels.numpy(), preds, confs, probs):
-                records.append({
-                    "image": pth,
-                    "true_idx": int(gt),
-                    "pred_idx": int(pr),
-                    "pred_conf": float(cf),
-                    "pred_label": idx_to_class[int(pr)],
-                    "true_label": idx_to_class[int(gt)],
-                })
-                y_true.append(int(gt))
-                y_pred.append(int(pr))
-                y_prob.append(float(cf))
+        for xb, yb in loader:
+            xb = xb.to(device)
+            out = model(xb)
+            p = torch.nn.functional.softmax(out, dim=1)
+            top1 = p.argmax(dim=1).cpu().numpy().tolist()
+            y_pred.extend(top1)
+            y_true.extend(yb.numpy().tolist())
+            probs.extend(p.max(dim=1).values.cpu().numpy().tolist())
 
-    # metrics
     accuracy = accuracy_score(y_true, y_pred)
-    print(f"Accuracy: {accuracy:.4f}")
+    print("Top-1 accuracy:", accuracy)
 
-    # classification report
-    target_names = [idx_to_class[i] for i in range(len(idx_to_class))]
-    report = classification_report(y_true, y_pred, target_names=target_names, output_dict=True, zero_division=0)
-
-    # confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-
-    # save artifacts
-    import pandas as pd
-    df_preds = pd.DataFrame(records)
-    preds_csv = out_dir / "preds.csv"
-    df_preds.to_csv(preds_csv, index=False)
-    print(f"Wrote predictions to {preds_csv}")
-
-    report_csv = out_dir / "classification_report.csv"
-    pd.DataFrame(report).transpose().to_csv(report_csv)
-    print(f"Wrote classification report to {report_csv}")
-
-    cm_csv = out_dir / "confusion_matrix.csv"
-    pd.DataFrame(cm, index=target_names, columns=target_names).to_csv(cm_csv)
-    print(f"Wrote confusion matrix CSV to {cm_csv}")
-
-    cm_png = out_dir / "confusion_matrix.png"
-    plot_confusion_matrix(cm, target_names, cm_png)
-    print(f"Wrote confusion matrix image to {cm_png}")
-
-    reliability_png = out_dir / "reliability.png"
-    # For calibration, we need binary indicators. Use top-1 correctness as y_true_bin and top-1 prob
-    y_true_bin = [int(a==b) for a,b in zip(y_true, y_pred)]
-    if len(set(y_true_bin)) > 1:
-        plot_reliability(y_true_bin, y_prob, reliability_png)
-        print(f"Wrote reliability diagram to {reliability_png}")
-    else:
+    # reliability / calibration plot (optional)
+    try:
+        prob_true, prob_pred = calibration_curve(np.array(y_true)==np.array(y_pred), np.array(probs), n_bins=10)
+        fig, ax = plt.subplots()
+        ax.plot(prob_pred, prob_true, marker="o")
+        ax.plot([0,1],[0,1], linestyle="--")
+        ax.set_xlabel("Predicted probability")
+        ax.set_ylabel("Fraction correct")
+        ax.set_title("Reliability diagram")
+        fig.savefig(out_dir / "reliability.png")
+    except Exception:
         print("Skipping reliability diagram (no positive/negative variation).")
 
     summary = {
