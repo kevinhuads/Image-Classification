@@ -1,4 +1,4 @@
-name: CI
+name: CI CD
 
 on:
   push:
@@ -50,17 +50,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-  
-      - name: Log in to Docker Hub
+
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-  
-      - name: Build and push image
+
+      - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/image-classification:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/image-classification:latest
+            ${{ secrets.DOCKER_USERNAME }}/image-classification:${{ github.sha }}
+      
   
