@@ -20,7 +20,7 @@ DEFAULT_CKPT = os.environ.get(
 @st.cache_resource
 def _cached_loader(ckpt: str):
     """Cached model loader — decorated but not called at import time."""
-    return load_model_and_meta(ckpt)
+    return load_model_and_meta(ckpt,map_location="cpu")
 
 
 def _build_sidebar() -> Tuple[object, str]:

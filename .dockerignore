@@ -1,33 +1,66 @@
-# Byte-compiled / cache
+# Version control
+.git
+.gitignore
+.gitattributes
+.github/
+
+# Python envs & caches
 __pycache__/
 *.py[cod]
-*.so
-*.pyd
 *.pyo
-*.pdb
-*.egg-info/
-.eggs/
-.pytest_cache/
-.mypy_cache/
-
-# Virtual environments
-.venv/
+*.pyd
+*.pyc
 venv/
+.venv/
+env/
+ENV/
+pip-wheel-metadata/
 
 # Build artifacts
 build/
 dist/
-wheelhouse/
+*.egg-info/
 
-# VCS and CI
-.git/
-.github/
+# Data & datasets (keep out of build context)
+data/
+datasets/
+raw_data/
+*.csv
+*.parquet
+*.tfrecord
+*.npz
 
-# OS / editor files
-.DS_Store
-*.swp
-*.swo
+# Model training artifacts and logs
+logs/
+runs/
+experiments/
+wandb/
+mlruns/
 
-# Tests and docs (optional if not needed in runtime)
+# Large model weights (re-include deliberately if needed)
+models/
+weights/
+
+# Notebooks and scratch
+*.ipynb
+notebooks/
+
+# Secrets and credentials
+.env
+*.pem
+*.key
+id_rsa
+.aws/
+credentials
+
+# Tests, CI, docs, local configs
 tests/
+.coverage
+.vscode/
+.idea/
 docs/
+
+# OS and editor junk
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,32 +1,30 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim AS base
-
-# Prevent Python from writing .pyc files and buffering stdout/stderr
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps (adjust if you need OpenCV, etc.)
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     libglib2.0-0 libsm6 libxrender1 libxext6 \
-#   && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Install only requirements first for better layer caching
-COPY requirements.txt /app/requirements.txt
-RUN pip install -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
 
-# Copy the rest of the source code
+# Copy dependency file(s) and install runtime deps first (cache-friendly)
+COPY requirements-ci.txt /app/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r /app/requirements.txt
+
+# Copy whole repository (so editable install can see package source)
 COPY . /app
 
-# If your project is a package, install it:
-# RUN pip install -e .
+# Install project in editable mode now that source is present
+RUN pip install -e .
 
-# Expose a port if you run a web service (uncomment and set correctly)
-# EXPOSE 8000
+EXPOSE 8501
 
-# Set the default command (adjust to how you run your app)
-# Example: python -m your_package.cli or python src/main.py
-CMD ["python", "-c", "print('Container built successfully. Replace CMD with your app entrypoint.')"]
+ENV STREAMLIT_SERVER_HEADLESS=true
+ENV STREAMLIT_SERVER_PORT=8501
+ENV STREAMLIT_SERVER_ENABLE_CORS=false
+
+CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.headless", "true"]
