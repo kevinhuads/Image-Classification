@@ -24,7 +24,7 @@ def load_model_and_meta(ckpt_path: str, device: torch.device | None = None, map_
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ckpt = torch.load(ckpt_path, map_location=map_location,weights_only=True)
+    ckpt = torch.load(ckpt_path, map_location=map_location,weights_only=False)
     classes = ckpt["classes"]
     num_classes = len(classes)
 
