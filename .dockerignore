@@ -36,6 +36,7 @@ runs/
 experiments/
 wandb/
 mlruns/
+artifacts/
 
 # Large model weights (re-include deliberately if needed)
 models/

@@ -12,8 +12,7 @@ from styles import css
 
 # Default checkpoint: prefer environment override so CI / users can set their own path
 DEFAULT_CKPT = os.environ.get(
-    "FOOD101_CKPT",
-    os.path.join("artifacts", "model.pth")
+    "FOOD101_CKPT","model.pth"
 )
 
 
