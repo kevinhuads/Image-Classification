@@ -97,7 +97,7 @@ def build_model_from_checkpoint(checkpoint_path: Path, device: torch.device, num
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default=None, help="path to YAML config")
-    p.add_argument("--checkpoint", default=None)
+    p.add_argument("--ckpt", default=None)
     p.add_argument("--data-root", dest="data_root", default=None, help="Root path that contains food-101/")
     p.add_argument("--out-dir", dest="out_dir", default="artifacts/eval")
     p.add_argument("--batch-size", dest="batch_size", type=int, default=64)
@@ -113,12 +113,12 @@ def main():
     args = apply_yaml_to_args(args, yaml_cfg)
 
     # now validate required fields (after YAML applied)
-    if args.checkpoint is None:
+    if args.ckpt is None:
         raise ValueError("checkpoint must be provided via CLI or --config")
     if args.data_root is None:
         raise ValueError("data_root must be provided via CLI or --config")
 
-    checkpoint_path = Path(args.checkpoint)
+    checkpoint_path = Path(args.ckpt)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 

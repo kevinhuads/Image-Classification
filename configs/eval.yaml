@@ -1,4 +1,4 @@
-checkpoint: artifacts/refactored_best.pth
+ckpt: artifacts/model.pth
 data_root: ./data/food-101
 out_dir: artifacts/eval
 batch_size: 64

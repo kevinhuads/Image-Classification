@@ -19,9 +19,9 @@ def apply_yaml_to_args(args, yaml_cfg):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default=None, help="path to YAML config")
+    parser.add_argument("--ckpt", default=None, help="path to checkpoint (can be set in YAML)")
     parser.add_argument("--image_path", help="Path to input image (jpg/png)", default=None)
-    parser.add_argument("--ckpt", default=r"artifacts\headonly_food101.pth")
-    parser.add_argument("--topk", type=int, default=5)
+    parser.add_argument("--topk", type=int, default=None, help="top-k predictions (can be set in YAML)")
     args = parser.parse_args()
 
     yaml_cfg = {}

@@ -1,6 +1,7 @@
 # configs/train.yaml
 data_folder: ./data/food-101
-output_folder: ./artifacts
+model_path: ./artifacts/model.pth
+csv_path:  ./artifacts/model.csv
 batch_size: 64
 epochs: 3
 lr: 3e-4

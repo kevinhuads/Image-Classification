@@ -18,7 +18,8 @@ def build_parser():
     p = argparse.ArgumentParser()
     p.add_argument("--config", type=str, default=None, help="path to YAML config")
     p.add_argument("--data_folder", type=str, default=None, help="root dataset folder")
-    p.add_argument("--output_folder", type=str, default=None, help="output folder")
+    p.add_argument("--model_path", type=str, default=None, help="output path for the model")
+    p.add_argument("--csv_path", type=str, default=None, help="output path for the csv")
     p.add_argument("--batch_size", type=int, default=None)
     p.add_argument("--epochs", type=int, default=None)
     p.add_argument("--lr", type=float, default=None)
@@ -26,7 +27,6 @@ def build_parser():
     p.add_argument("--num_workers", type=int, default=None)
     p.add_argument("--freeze_backbone", action="store_true", default=None)
     p.add_argument("--pretrained", action="store_true", default=None)
-    p.add_argument("--output", type=str, default=None)
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--seed", type=int, default=None)
     return p
@@ -90,7 +90,7 @@ def main():
 
     image_folder = os.path.join(args.data_folder, "images")
     meta_folder = os.path.join(args.data_folder, "meta")
-    os.makedirs(args.output_folder, exist_ok=True)
+    os.makedirs("artifacts", exist_ok=True)
 
 
     train_list, test_list = read_splits(meta_folder)
@@ -120,8 +120,6 @@ def main():
     scheduler = OneCycleLR(optimizer, max_lr=args.lr,
                            steps_per_epoch=len(train_loader), epochs=args.epochs)
 
-    output_path = os.path.join(args.output_folder, "refactored_best.pth")
-    csv_path = os.path.join(args.output_folder, "refactored_results.csv")
 
     best_acc = 0.0
     for epoch in range(1, args.epochs + 1):
@@ -133,12 +131,12 @@ def main():
         print(f"Epoch {epoch} | Train loss {train_loss:.4f} acc1 {train_acc1:.4f} acc5 {train_acc5:.4f} "
               f"| Val loss {val_loss:.4f} acc1 {val_acc1:.4f} acc5 {val_acc5:.4f}")
 
-        append_csv(csv_path, [epoch, train_loss, train_acc1, train_acc5, val_loss, val_acc1, val_acc5])
+        append_csv(args.csv_path, [epoch, train_loss, train_acc1, train_acc5, val_loss, val_acc1, val_acc5])
 
         if val_acc1 > best_acc:
             best_acc = val_acc1
-            save_checkpoint(output_path, epoch, model, optimizer, classes)
-            print("Saved best model", output_path)
+            save_checkpoint(args.model_path, epoch, model, optimizer, classes)
+            print("Saved best model", args.model_path)
 
 if __name__ == "__main__":
     main()
