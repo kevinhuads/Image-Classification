@@ -135,9 +135,6 @@ tenacity==9.1.2
 text-unidecode==1.3
 threadpoolctl==3.6.0
 toml==0.10.2
-torch==2.5.1
-torchaudio==2.5.1
-torchvision==0.20.1
 tornado==6.5.2
 tqdm==4.67.1
 Twisted==24.7.0
@@ -155,3 +152,9 @@ zipp==3.23.0
 zope.event==6.0
 zope.interface==8.0.1
 
+#CI specific
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
+pytest-cov==4.0.0
+coverage==7.6.0
