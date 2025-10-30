@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.calibration import calibration_curve
 
-from config_loader import load_yaml
+from config import load_yaml
 
 # ---- Dataset helper for Food-101 test split ----
 class Food101TestDataset(Dataset):

@@ -62,8 +62,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-
-
 ## Usage
 
 ### Notebooks
@@ -112,39 +110,22 @@ Minimum keys expected in the YAMLs:
 
 ## Docker
 
-Build an image:
-
+### Build and Run
 ```bash
-docker build -t image-classification:latest .
+docker compose up --build
 ```
 
-Run interactively and mount the project:
-
+Run in background:
 ```bash
-docker run --rm -it \
-  -v "$PWD":/workspace \
-  -w /workspace \
-  image-classification:latest \
-  bash
+docker compose up -d
 ```
 
-Optionally, run the app inside the container:
+### Access
+Open [http://localhost:8501](http://localhost:8501)
 
+### Stop
 ```bash
-docker run --rm -it \
-  -v "$PWD":/workspace \
-  -w /workspace \
-  image-classification:latest \
-  python app.py
-```
-
-If your app serves a web UI/API, expose a port (replace 7860 with your app’s port):
-
-```bash
-docker run --rm -it -p 7860:7860 \
-  -v "$PWD":/workspace \
-  -w /workspace \
-  image-classification:latest
+docker compose down
 ```
 
 ## Testing

@@ -6,6 +6,8 @@ from PIL import Image
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
+from mlflow.models import infer_signature
+
 
 # keep preprocessing identical across scripts
 PREPROCESS = transforms.Compose([
@@ -55,3 +57,16 @@ def predict_pil(image: Image.Image, model, device, preprocess, topk: int = 5) ->
 def topk_labels(pred_idx_probs, classes):
     """Convert list of (idx, prob) to (label, prob)."""
     return [(classes[idx], prob) for idx, prob in pred_idx_probs]
+
+
+
+@torch.no_grad()
+def infer_one_batch_signature(model, val_loader, device):
+    model.eval()
+    x_ex, _ = next(iter(val_loader))          # CPU tensor
+    x_ex = x_ex[:1]                           # (1,C,H,W)
+    y_ex = model(x_ex.to(device)).detach().cpu()
+    x_ex_np = x_ex.numpy()
+    y_ex_np = y_ex.numpy()
+    signature = infer_signature(x_ex_np, y_ex_np)
+    return x_ex_np, signature

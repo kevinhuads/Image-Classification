@@ -1,51 +1,55 @@
-# config.py
-from __future__ import annotations
-import os
 from pathlib import Path
-from dataclasses import dataclass
-import yaml
+import random, numpy as np, torch, yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parent  
-DEFAULT_DATA = PROJECT_ROOT / "data"
-DEFAULT_ARTIFACTS = PROJECT_ROOT / "artifacts" / "food101"
+def load_yaml(path):
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"Config file not found: {p}")
+    with p.open("r", encoding="utf8") as f:
+        return yaml.safe_load(f) or {}
+    
+    
+def apply_yaml_to_args(args, yaml_cfg):
+    """
+    For every key in yaml_cfg, set attr on args only if CLI left it None.
+    This gives CLI priority when a user explicitly overrides a YAML value.
+    """
+    for k, v in (yaml_cfg.items() if yaml_cfg else []):
+        if not hasattr(args, k):
+            # ignore unknown keys or add mapping if you renamed CLI args
+            continue
+        cur = getattr(args, k)
+        # If CLI left it None OR (it's a bool False and YAML provides a bool), override
+        if cur is None or (isinstance(cur, bool) and isinstance(v, bool) and cur == False):
+            setattr(args, k, v)
+    return args
 
-def _load_yaml(path: Path | None):
-    if path and path.exists():
-        with path.open("r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
-    return {}
+def resolve_paths(args):
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]
+    if args.data_folder is None:
+        raise ValueError("data_folder must be provided (via CLI or --config).")
+    data_folder = Path(args.data_folder).expanduser()
+    if not data_folder.is_absolute():
+        data_folder = (PROJECT_ROOT / data_folder).resolve()
+    args.data_folder = str(data_folder)
 
-@dataclass(frozen=True)
-class AppConfig:
-    data_dir: Path
-    artifacts_dir: Path
-    ckpt_name: str
+    # coerce numeric fields that may come from YAML as strings
+    for k in ("seed","num_workers","batch_size","epochs"):
+        v = getattr(args, k, None)
+        if v is not None: setattr(args, k, int(v))
+    for k in ("lr","weight_decay"):
+        v = getattr(args, k, None)
+        if v is not None: setattr(args, k, float(v))
+    return args
 
-    @property
-    def images_dir(self) -> Path: return self.data_dir / "images"
-    @property
-    def meta_dir(self) -> Path:   return self.data_dir / "meta"
-    @property
-    def ckpt_path(self) -> Path:  return self.artifacts_dir / self.ckpt_name
-    @property
-    def results_csv(self) -> Path:return self.artifacts_dir / "results.csv"
+def set_seed(seed: int = 3):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
-def load_config(config_file: Path | None = None) -> AppConfig:
-    env = os.environ
-    yml = _load_yaml(config_file or PROJECT_ROOT / "config.yaml")
-
-    data_dir = Path(
-        env.get("FOOD101_DATA_DIR")
-        or yml.get("data_dir")
-        or DEFAULT_DATA
-    ).resolve()
-
-    artifacts_dir = Path(
-        env.get("FOOD101_ARTIFACT_DIR")
-        or yml.get("artifacts_dir")
-        or DEFAULT_ARTIFACTS
-    ).resolve()
-
-    ckpt_name = env.get("FOOD101_CKPT_NAME") or yml.get("ckpt_name") or "best.pth"
-
-    return AppConfig(data_dir=data_dir, artifacts_dir=artifacts_dir, ckpt_name=ckpt_name)
+def get_device_and_pin():
+    has_cuda = torch.cuda.is_available()
+    has_xpu = hasattr(torch, "xpu") and torch.xpu.is_available()
+    device = torch.device("cuda" if has_cuda else "cpu")
+    pin_memory = has_cuda or has_xpu
+    return device, device.type, pin_memory

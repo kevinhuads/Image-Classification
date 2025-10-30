@@ -3,3 +3,5 @@ artifacts/
 .ipynb_checkpoints/ 
 .venv/
 data/
+mlruns/
+old_scripts/
