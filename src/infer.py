@@ -1,6 +1,6 @@
 import argparse
 from PIL import Image
-from config_loader import load_yaml
+from config import load_yaml
 from utils import load_model_and_meta, predict_pil, topk_labels
 
 def apply_yaml_to_args(args, yaml_cfg):
