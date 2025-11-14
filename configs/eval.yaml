@@ -1,4 +1,4 @@
-ckpt: artifacts/model.pth
+ckpt: artifacts/test.pth
 data_root: ./data/food-101
 out_dir: artifacts/eval
 batch_size: 64

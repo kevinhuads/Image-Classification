@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from mlflow.models import infer_signature
-
+from engine import _main_logits
 
 # keep preprocessing identical across scripts
 PREPROCESS = transforms.Compose([
@@ -46,6 +46,7 @@ def predict_pil(image: Image.Image, model, device, preprocess, topk: int = 5) ->
     x = preprocess(image.convert("RGB")).unsqueeze(0).to(device)
     with torch.no_grad(), torch.amp.autocast(device_type=device.type):
         logits = model(x)
+        logits = _main_logits(logits)
         
         # Ensure logits are in float32 for CPU compatibility
         if logits.dtype == torch.bfloat16:
@@ -66,6 +67,7 @@ def infer_one_batch_signature(model, val_loader, device):
     x_ex, _ = next(iter(val_loader))          # CPU tensor
     x_ex = x_ex[:1]                           # (1,C,H,W)
     y_ex = model(x_ex.to(device)).detach().cpu()
+    y_ex = _main_logits(y_ex).detach().cpu()
     x_ex_np = x_ex.numpy()
     y_ex_np = y_ex.numpy()
     signature = infer_signature(x_ex_np, y_ex_np)

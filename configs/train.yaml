@@ -1,22 +1,19 @@
-# configs/train.yaml
+arch: "resnet18"
+pretrained: true
+
 data_folder: ./data/food-101
-model_path: ./artifacts/test.pth
-csv_path:  ./artifacts/test.csv
-batch_size: 64 #default 64
-epochs: 3 #default 5
+batch_size: 64
+epochs: 10
 lr: 3e-4
 weight_decay: 0.01
 num_workers: 4
-freeze_backbone: true
-pretrained: true
+freeze_backbone: false
 device: cuda
 seed: 3
 
-# MLflow (optional; can be overridden by CLI)
 mlflow: true
 mlflow_experiment: "Image-Classification"
-mlflow_tracking_uri: "file:./mlruns"    # or https://<mlflow-host>
-mlflow_run_name: "multi class metrics"                # optional
+mlflow_tracking_uri: "file:./mlruns"
 mlflow_tags:
   dataset: "food101"
   stage: "dev"

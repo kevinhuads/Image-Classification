@@ -1,31 +1,69 @@
-# Image Classification
+## Multi Classes Image Classification on Food Dataset
 
-A Python-based project for training, evaluating, and experimenting with image classification models. The repository includes reproducible environments, Jupyter notebooks for exploration, and a structured codebase for development and testing.
+
+A Python-based project for training, evaluating, and deploying image classification models on the **Food-101** dataset.  
+The task is a **multi-class classification** problem with **101 food categories** and approximately **101 000 images**, where each image belongs to exactly one class.
+
+The project combines:
+
+- **Exploratory Data Analysis (EDA)** of the dataset and its visual structure in embedding space.
+- A **benchmark of modern architectures** (CNNs and Vision Transformers) under both frozen-backbone and full fine-tuning regimes.
+- An **MLOps-ready stack** for training, tracking and deployment.
+
+## High-level results and model choices
+
+The main experimental results are presented in the notebooks:
+
+- `notebooks/1_EDA.ipynb`  
+  Large-scale exploratory analysis of Food-101: image dimensions, aspect ratios, pretrained feature embeddings, t-SNE projections and hierarchical clustering. This notebook establishes how the dataset is organised in a generic pretrained feature space.
+
+- `notebooks/2_models.ipynb`  
+  Benchmark of several architectures, including MLP and small CNN baselines, ResNet50, EfficientNet, ConvNeXt, Vision Transformers and Swin Transformers. Models are evaluated with both frozen backbones and full fine-tuning on Food-101.
+
+Under the current configuration:
+
+- **swin_b** is the best performing model, reaching about **91.8% Top-1 accuracy** and **over 99% Top-7 accuracy** on the validation set. Its embeddings show strong class separation and high clustering quality after fine-tuning.
+- **swin_t** achieves very similar performance (around **91.2% Top-1 accuracy**) with a significantly smaller checkpoint and faster inference and is used as the backbone for the **Streamlit application** (`app.py`), where its lighter footprint and faster predictions provide a more responsive user experience while preserving strong accuracy.
+
+## Dataset
+
+The project uses the **Food-101** dataset:
+
+- 101 food categories (such as *pizza*, *sushi*, *steak*, *ramen*).
+- 1 000 images per class, split into 750 training images and 250 test images.
+- Images stored in a class-based folder structure with `meta/train.txt` and `meta/test.txt` defining the splits.
+
+The notebooks and training scripts assume this layout under a configurable `data_folder` (for example `data/food-101`).
+
 
 ## Key Features
 
-- Jupyter notebooks for rapid experimentation and visualization
-- Reproducible environments via `requirements.txt` and a Dockerfile
-- Organized project layout with `src/`, `configs/`, and `tests/`
-- Lightweight app entry point (`app.py`) for demos or quick runs
-- CI-friendly dependency pinning via `requirements-ci.txt`
+- Jupyter notebooks for EDA, model benchmarking and interpretation:
+  - `1_EDA.ipynb` for dataset and representation analysis.
+  - `2_models.ipynb` for architecture comparison and detailed study of **swin_b**.
+- Reproducible environments via `requirements.txt` and a Dockerfile.
+- Organised project layout with `src/`, `configs/`, and `tests/`.
+- Streamlit application (`app.py`) for interactive inference with a lightweight swin_t backbone.
+- CI-friendly dependency pinning via `requirements-ci.txt`.
+- Integration points for MLflow, Docker and CI/CD to support an end-to-end MLOps workflow.
+
 
 ## Project Structure
 
-```
+```text
 .
 ├─ .dockerignore           # Files/directories excluded from Docker context
 ├─ .gitignore              # Git ignore rules
-├─ .github/                # GitHub configuration (e.g., workflows, templates)
-├─ Dockerfile              # Containerized environment
+├─ .github/                # GitHub configuration (workflows, templates)
+├─ Dockerfile              # Containerised environment
 ├─ README.md               # You are here
-├─ app.py                  # Minimal entry point (demo / script runner)
-├─ configs/                # Configuration files (e.g., experiment settings)
-├─ notebooks/              # Jupyter notebooks for analysis and prototyping
+├─ app.py                  # Streamlit entry point for interactive inference
+├─ configs/                # Configuration files (experiment settings)
+├─ notebooks/              # Jupyter notebooks (EDA, models, MLOps)
 ├─ pyproject.toml          # Project metadata and build config (PEP 621)
 ├─ requirements-ci.txt     # CI-focused dependency pinning
 ├─ requirements.txt        # Main project dependencies
-├─ src/                    # Source code
+├─ src/                    # Source code (training, evaluation, inference, app)
 └─ tests/                  # Test suite
 ```
 
@@ -66,22 +104,32 @@ pip install -r requirements.txt
 
 ### Notebooks
 
-- Explore and prototype in `notebooks/`.
-- Recommend using the created kernel (`image-classification`) for consistent dependencies.
+The main analysis and experiments are documented in `notebooks/`:
+
+- `1_EDA.ipynb`: dataset exploration, embeddings, t-SNE, dendrograms.
+- `2_models.ipynb`: model benchmark (MLP, CNNs, transformers), comparison of frozen vs full fine-tuning, focus on swin_b.
+
+Running these notebooks with the same environment ensures reproducibility of the reported results.
 
 ### Scripts and app
 
-- The repository includes a minimal `app.py`. You can use it as a starting point for quick inference demos, utility scripts, or CLI entry points:
+The repository includes a Streamlit application for interactive inference:
 
 ```bash
 streamlit run app.py
 ```
 
-- Explore the `src/` directory for reusable modules and components. Organize your training/evaluation workflows there.
+The app loads a trained swin_t checkpoint and provides:
+
+- Image upload.
+- Top-N predictions with probabilities.
+- Visualisation of model confidence.
+
+The core training, evaluation and inference logic is implemented in `src/`. The main entry points are:
 
 ### YAML-first commands for src modules
 
-Prefer keeping all settings in YAML files under `configs/`, and invoke modules with only `--config` (CLI flags remain optional overrides if you need them).
+Configuration is handled via YAML files under `configs/`. Command-line arguments can be used as optional overrides.
 
 - Training:
   ```bash
@@ -93,60 +141,65 @@ Prefer keeping all settings in YAML files under `configs/`, and invoke modules w
   python -m src.eval --config configs/eval.yaml
   ```
 
-- Inference:
+- Inference (CLI):
   ```bash
   python -m src.infer --config configs/infer.yaml
   ```
 
 Minimum keys expected in the YAMLs:
-- train.yaml: data_folder, output_folder, epochs, batch_size, lr, weight_decay, num_workers, seed, device, pretrained, freeze_backbone
-- eval.yaml: checkpoint, data_root, out_dir, batch_size, num_workers, device, num_classes (optional)
-- infer.yaml: image_path, ckpt, topk
+
+- `train.yaml`: `data_folder`, `output_folder`, `epochs`, `batch_size`, `lr`, `weight_decay`, `num_workers`, `seed`, `device`, `pretrained`, `freeze_backbone`.
+- `eval.yaml`: `ckpt`, `data_root`, `out_dir`, `batch_size`, `num_workers`, `device`, `num_classes` (optional).
+- `infer.yaml`: `image_path`, `ckpt`, `topk`.
 
 ### Configurations
 
-- Store and version your experiment settings in `configs/`.
-- Add new configuration files as needed (e.g., YAML/JSON for datasets, model hyperparameters, and training schedules).
+- Store and version experiment settings in `configs/`.
+- Add new configuration files as needed for alternative datasets, model variants or training schedules.
 
 ## Docker
 
-### Build and Run
+### Build and run
+
 ```bash
 docker compose up --build
 ```
 
 Run in background:
+
 ```bash
 docker compose up -d
 ```
 
 ### Access
-Open [http://localhost:8501](http://localhost:8501)
+
+Open [http://localhost:8501](http://localhost:8501) to access the Streamlit app.
 
 ### Stop
+
 ```bash
 docker compose down
 ```
 
 ## Testing
 
-Run the test suite (assuming `pytest` is included in the dependencies):
+Run the test suite:
 
 ```bash
 pytest -v
 ```
 
-Place new tests under `tests/` and follow a clear naming convention (e.g., `test_*.py`).
+Place tests under `tests/` and follow a clear naming convention (for example `test_*.py`).
 
 ## Data Management
 
-- Store datasets outside the repository or under a dedicated `data/` directory (ignored by Git if large).
-- Consider using symlinks, environment variables, or configuration files in `configs/` to point to dataset locations.
-- For large files, prefer external storage or Git LFS.
+- Store datasets under a dedicated `data/` directory (ignored by Git if large) or in an external location.
+- Use configuration files in `configs/` to point to dataset locations.
+- For large files or models, consider external storage or Git LFS.
 
-## Reproducibility Tips
+## Reproducibility
 
-- Pin dependencies where possible (see `requirements-ci.txt` for CI).
-- Keep configurations in version control (`configs/`).
-- Record random seeds in your training/evaluation scripts.
-- Capture environment info (e.g., `pip freeze`, `python --version`) in experiment logs.
+- Pin dependencies where appropriate (see `requirements-ci.txt` for CI).
+- Keep configurations under version control.
+- Record random seeds in training and evaluation scripts.
+- Log environment information (for example `pip freeze`, `python --version`) in experiment tracking tools such as MLflow.

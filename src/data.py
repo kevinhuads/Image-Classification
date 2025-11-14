@@ -15,17 +15,20 @@ def read_splits(meta_folder: str) -> Tuple[List[str], List[str]]:
         test_list = [line.strip() + ".jpg" for line in f]
     return train_list, test_list
 
-def build_transforms() -> Tuple[transforms.Compose, transforms.Compose]:
+def build_transforms(img_size: int = 224) -> Tuple[transforms.Compose, transforms.Compose]:
+    # keep ImageNet normalization for both modes (works fine from scratch too)
     train_tf = transforms.Compose([
-        transforms.RandomResizedCrop(224),
+        transforms.RandomResizedCrop(img_size),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
         transforms.ToTensor(),
         transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225]),
     ])
+    # scale Resize proportionally to classic 256->224 pipeline
+    val_resize = max(img_size + 32, int(round(img_size * 256 / 224)))
     val_tf = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize(val_resize),
+        transforms.CenterCrop(img_size),
         transforms.ToTensor(),
         transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225]),
     ])
