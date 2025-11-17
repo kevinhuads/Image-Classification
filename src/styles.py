@@ -12,7 +12,10 @@ def css() -> str:
       --radius:16px;
     }
     .stApp { background: radial-gradient(1200px 800px at 10% -10%, #0b1730 0%, var(--bg) 60%) }
-    header, footer {visibility: hidden;}
+
+    /* Changed this line: removed `header,` */
+    footer {visibility: hidden;}
+
     .app-header{
       padding: 18px 22px; border-radius: var(--radius);
       background: linear-gradient(180deg, rgba(34,211,238,.12), rgba(34,211,238,0));
@@ -42,4 +45,51 @@ def css() -> str:
     }
     .stTextInput input:focus, .stSelectbox:focus, .stFileUploader:focus-within { box-shadow: 0 0 0 3px var(--ring); }
     .stMarkdown h3, .stMarkdown h2 { color: var(--text) !important; }
+    
+    .social-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      margin: 0.75rem 0 2rem 0;
+    }
+
+    .social-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: #ffffff; /* White background */
+      border: 1px solid rgba(148,163,184,0.25);
+      color: #000000;      /* Default text color inside pill */
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+      transition:
+        transform 120ms ease-out,
+        box-shadow 120ms ease-out,
+        border-color 120ms ease-out;
+    }
+
+    .social-pill span {
+      color: #000000;      /* Ensure label text is black */
+    }
+
+    .social-pill img {
+      width: 20px;
+      height: 20px;
+      filter: none;
+    }
+
+    .social-pill:hover {
+      transform: translateY(-2px) scale(1.03);
+      border-color: rgba(15,23,42,0.55);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.32);
+    }
+
+
     """

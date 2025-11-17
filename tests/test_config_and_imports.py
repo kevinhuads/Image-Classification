@@ -1,14 +1,14 @@
 import sys
 import importlib
-from pathlib import Path
+import os
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
+root_dir = os.getcwd()
+src_dir = os.path.join(root_dir, "src")
 
 def test_src_on_path():
-    if str(SRC) not in sys.path:
-        sys.path.insert(0, str(SRC))
-    assert str(SRC) in sys.path
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+    assert str(src_dir) in sys.path
 
 def test_core_modules_import():
     """

@@ -1,4 +1,4 @@
-arch: "resnet18"
+arch: "resnet50"
 pretrained: true
 
 data_folder: ./data/food-101

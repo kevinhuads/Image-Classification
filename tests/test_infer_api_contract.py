@@ -1,5 +1,4 @@
 import importlib
-import inspect
 import os
 import types
 import pytest

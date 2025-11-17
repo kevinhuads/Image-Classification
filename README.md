@@ -20,6 +20,9 @@ The main experimental results are presented in the notebooks:
 - `notebooks/2_models.ipynb`  
   Benchmark of several architectures, including MLP and small CNN baselines, ResNet50, EfficientNet, ConvNeXt, Vision Transformers and Swin Transformers. Models are evaluated with both frozen backbones and full fine-tuning on Food-101.
 
+- `notebooks/3_MLOps.ipynb`  
+  Description of the operational workflow around the project: MLflow based experiment tracking, Streamlit demo architecture, Docker and Docker Compose setup, and CI/CD pipeline based on GitHub Actions.
+
 Under the current configuration:
 
 - **swin_b** is the best performing model, reaching about **91.8% Top-1 accuracy** and **over 99% Top-7 accuracy** on the validation set. Its embeddings show strong class separation and high clustering quality after fine-tuning.
@@ -41,6 +44,7 @@ The notebooks and training scripts assume this layout under a configurable `data
 - Jupyter notebooks for EDA, model benchmarking and interpretation:
   - `1_EDA.ipynb` for dataset and representation analysis.
   - `2_models.ipynb` for architecture comparison and detailed study of **swin_b**.
+  - `3_MLOps.ipynb` for an overview of experiment tracking, the Streamlit demo, containerisation and CI/CD.
 - Reproducible environments via `requirements.txt` and a Dockerfile.
 - Organised project layout with `src/`, `configs/`, and `tests/`.
 - Streamlit application (`app.py`) for interactive inference with a lightweight swin_t backbone.
@@ -77,8 +81,8 @@ The notebooks and training scripts assume this layout under a configurable `data
 ### 2) Clone the repository
 
 ```bash
-git clone https://github.com/kevinhuads/Image-Classification.git
-cd Image-Classification
+git clone https://github.com/kevinhuads/deepvision-workflow.git
+cd deepvision-workflow
 ```
 
 ### 3) Set up a virtual environment
@@ -108,6 +112,7 @@ The main analysis and experiments are documented in `notebooks/`:
 
 - `1_EDA.ipynb`: dataset exploration, embeddings, t-SNE, dendrograms.
 - `2_models.ipynb`: model benchmark (MLP, CNNs, transformers), comparison of frozen vs full fine-tuning, focus on swin_b.
+- `3_MLOps.ipynb`: operational view of the project, covering MLflow tracking, the Streamlit application, Docker and Docker Compose configuration, and the GitHub Actions based CI/CD pipeline.
 
 Running these notebooks with the same environment ensures reproducibility of the reported results.
 
@@ -189,7 +194,12 @@ Run the test suite:
 pytest -v
 ```
 
-Place tests under `tests/` and follow a clear naming convention (for example `test_*.py`).
+The tests in `tests/` cover:
+- Smoke checks for project layout and CLIs (imports, --help, basic parsing).
+- Data pipeline contracts and runtime on a tiny synthetic Food-101–style dataset.
+- Inference utilities (preprocessing, prediction API, top-k outputs).
+- Metric helpers for accuracy and probability handling.
+- A short “happy path” training run that produces artifacts on a minimal dataset.
 
 ## Data Management
 

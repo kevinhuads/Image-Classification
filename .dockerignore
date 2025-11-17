@@ -45,6 +45,7 @@ weights/
 # Notebooks and scratch
 *.ipynb
 notebooks/
+figures/
 
 # Secrets and credentials
 .env

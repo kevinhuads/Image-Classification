@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import types
 import pytest
 
 # ---- utilities ----

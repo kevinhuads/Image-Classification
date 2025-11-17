@@ -3,8 +3,8 @@ import sys
 import subprocess
 import pytest
 
-ROOT = os.getcwd()
-SRC = os.path.join(ROOT, "src")
+root_dir = os.getcwd()
+src_dir = os.path.join(root_dir, "src")
 
 @pytest.mark.parametrize(
     "module,args",
@@ -17,7 +17,7 @@ SRC = os.path.join(ROOT, "src")
 def test_cli_parses_and_exits_fast(module, args):
     env = os.environ.copy()
     # Put repo root on PYTHONPATH so `src` is importable as a package namespace
-    env["PYTHONPATH"] = ROOT + os.pathsep + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = root_dir + os.pathsep + env.get("PYTHONPATH", "")
     # run as package module so relative imports inside train/infer work: python -m src.train
     module_to_run = f"src.{module}"
     proc = subprocess.run([sys.executable, "-m", module_to_run, *args], env=env, capture_output=True, text=True)

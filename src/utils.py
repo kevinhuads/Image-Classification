@@ -18,21 +18,21 @@ PREPROCESS = transforms.Compose([
                          [0.229, 0.224, 0.225]),
 ])
 
-def load_model_and_meta(ckpt_path: str, device: torch.device | None = None, map_location:str="cuda"):
-    """
-    Load checkpoint (expects keys: 'model_state_dict', 'classes').
-    Returns: model (eval), device, preprocess callable, classes list.
-    """
+
+def load_model_and_meta(ckpt_path: str,
+                        device: torch.device | None = None,
+                        map_location: str = "cuda"):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ckpt = torch.load(ckpt_path, map_location=map_location,weights_only=False)
+    ckpt = torch.load(ckpt_path, map_location=map_location, weights_only=False)
     classes = ckpt["classes"]
     num_classes = len(classes)
 
-    # build the architecture (match training script)
-    model = models.resnet50(weights=None)
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    # Build Swin-T (adjust to exactly the same variant you used in training)
+    model = models.swin_t(weights=None)
+    model.head = nn.Linear(model.head.in_features, num_classes)
+
     model.load_state_dict(ckpt["model_state_dict"], strict=True)
     model.to(device)
     model.eval()

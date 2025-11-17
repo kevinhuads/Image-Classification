@@ -1,8 +1,9 @@
 # tests/conftest.py
 import sys
-from pathlib import Path
+import os
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = str(ROOT / "src")
-if SRC not in sys.path:
-    sys.path.insert(0, SRC)
+root_dir = os.getcwd()
+src_dir = os.path.join(root_dir, "src")
+
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)

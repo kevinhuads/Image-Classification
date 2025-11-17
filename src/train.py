@@ -82,6 +82,7 @@ def main():
     train_ds, val_ds, classes = make_datasets(image_folder, train_list, test_list, train_tf, val_tf)
 
     device, device_str, pin_memory = get_device_and_pin()
+    topk_max = min(20, len(classes))
     
     common_loader_kwargs = dict(num_workers=args.num_workers, pin_memory=False, persistent_workers=(args.num_workers or 0) > 0,prefetch_factor=2)
     
@@ -135,25 +136,32 @@ def main():
         for epoch in range(1, args.epochs + 1):
             # train returns avg_loss and list of top1..topK accuracies
             train_loss, train_accs, train_lr, train_grad_norm, train_param_norm, train_epoch_time, train_ips = train_one_epoch(
-                model, train_loader, optimizer, criterion, scaler, device, device_str, scheduler, topk_max=20
+                model, train_loader, optimizer, criterion, scaler, device, device_str, scheduler, topk_max=topk_max
             )
 
             if args.mlflow:
                 val_loss, val_accs, val_epoch_time, val_ips, y_true, y_score = validate(
-                    model, val_loader, criterion, device, device_str, topk_max=20, collect=True
+                    model, val_loader, criterion, device, device_str, topk_max=topk_max, collect=True
                 )
                 evaluate_and_log(model, val_loader, device, epoch, classes, run_name, mlflow_enabled=True,
                                  y_true=y_true, y_score=y_score)
             else:
                 val_loss, val_accs, val_epoch_time, val_ips = validate(
-                    model, val_loader, criterion, device, device_str, topk_max=20
+                    model, val_loader, criterion, device, device_str, topk_max=topk_max
                 )
 
 
             # readable short print for console (show top-1 and top-5 for quick glance)
+            acc1_train = train_accs[0]
+            acc1_val = val_accs[0]
+
+            acc5_idx = min(4, len(train_accs) - 1)  # use last available if fewer than 5
+            acc5_train = train_accs[acc5_idx]
+            acc5_val = val_accs[acc5_idx]
+
             print(
-                f"Epoch {epoch} | Train loss {train_loss:.4f} acc1 {train_accs[0]:.4f} acc5 {train_accs[4]:.4f} "
-                f"| Val loss {val_loss:.4f} acc1 {val_accs[0]:.4f} acc5 {val_accs[4]:.4f}"
+                f"Epoch {epoch} | Train loss {train_loss:.4f} acc1 {acc1_train:.4f} accX {acc5_train:.4f} "
+                f"| Val loss {val_loss:.4f} acc1 {acc1_val:.4f} accX {acc5_val:.4f}"
             )
 
             # CSV row:
@@ -177,7 +185,7 @@ def main():
                     float(val_ips),
                 ]
             )
-            append_csv(csv_path, csv_row, topk_max=20)
+            append_csv(csv_path, csv_row, topk_max=topk_max)
 
 
             if args.mlflow:
