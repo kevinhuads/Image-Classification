@@ -118,7 +118,11 @@ Running these notebooks with the same environment ensures reproducibility of the
 
 ### Scripts and app
 
-The repository includes a Streamlit application for interactive inference:
+The repository includes a Streamlit application for interactive inference where the user can test the model by uploading their own images. The model will then return the result with its confidence:
+
+<img src="figures/screenshot_streamlit.png" width="800" alt="screenshot_streamlit">
+
+To run it, run the following command:
 
 ```bash
 streamlit run app.py
@@ -213,3 +217,20 @@ The tests in `tests/` cover:
 - Keep configurations under version control.
 - Record random seeds in training and evaluation scripts.
 - Log environment information (for example `pip freeze`, `python --version`) in experiment tracking tools such as MLflow.
+
+## Limitations and business-oriented considerations
+
+### Technical and data-related limitations
+
+- **Dataset coverage**: Food-101 is a curated academic dataset with 101 predefined classes. Many real-world dishes, regional variants or mixed plates are not represented. The model is therefore not a universal food recogniser and may misclassify items outside this closed set of classes.
+- **Single-label classification**: Each image is assumed to contain a single dominant dish. Multi-label situations (for example a plate combining salad, meat and sides, or buffet-style images) are not modelled explicitly and can lead to unstable or ambiguous predictions.
+- **Domain shift and robustness**: The model is trained on Food-101 images, which differ from many production environments (lighting, camera quality, plating, user-generated cropping, etc.). Performance may degrade significantly on domains that differ from the training distribution without explicit adaptation.
+- **No automatic nutritional or health information**: The system recognises dish categories only. It does not estimate portion size, ingredients, allergens or nutritional values and must not be used as a source of medical, dietary or allergen advice.
+- **Demo-oriented serving stack**: The Streamlit application and Docker setup are designed for experimentation and demonstration. They do not include production-grade concerns such as autoscaling, high-availability, request authentication or detailed runtime monitoring.
+
+### Business-oriented context
+
+- **Example use cases**: The current system can support use cases such as semi-automated photo labelling for food platforms, menu search by image, or internal prototyping for food logging applications. For any of these, additional product work is needed around UX, error handling and human-in-the-loop review.
+- **Operational metrics beyond accuracy**: In a real deployment, key metrics would include latency (for example p95 response time per image), throughput, system uptime and user-facing error rates, in addition to classification accuracy and calibration. These metrics are only partially explored in this project.
+- **Monitoring and feedback loop**: A production system would log requests and predictions, sample and review failures, monitor class distribution drift and trigger model re-training when performance deteriorates. The current project describes these aspects conceptually but does not implement a full monitoring pipeline.
+- **Governance and compliance**: Any integration into a customer-facing product would need additional work on data governance, privacy, consent and model documentation (for example extended model cards and risk assessments) aligned with the organisation’s policies and applicable regulations.
