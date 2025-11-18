@@ -12,7 +12,9 @@ The project combines:
 
 ### Live demo
 A hosted version of the application is available on Hugging Face Spaces.  
-It runs as a Docker Space built from the same container image defined in this repository: https://kevinhuads-deepvision-workflow.hf.space/
+It runs as a Docker Space built from the same container image defined in this repository: 
+
+https://kevinhuads-deepvision-workflow.hf.space/
 
 ## High-level results and model choices
 
