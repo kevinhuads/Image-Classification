@@ -1,4 +1,4 @@
-## Multi Classes Image Classification on Food Dataset
+# Multi Classes Image Classification on Food Dataset
 
 
 A Python-based project for training, evaluating, and deploying image classification models on the **Food-101** dataset.  
