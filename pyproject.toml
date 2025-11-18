@@ -3,13 +3,61 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "food101"
+name = "deepvision-workflow"
 version = "0.1.0"
-description = "Food-101 classifier: training, inference, and UI"
+description = "End-to-end Food-101 image classification workflow: training, evaluation, experiment tracking, and demo."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.11"
+
+authors = [
+  { name = "Kevin Hua", email = "kevin.hua.ds@gmail.com" }
+]
+
+dependencies = [
+  "torch",
+  "torchvision",
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "matplotlib",
+  "Pillow",
+  "PyYAML",
+  "tqdm",
+  "mlflow",
+  "altair",
+  "streamlit",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+]
+notebooks = [
+  "seaborn",
+  "scipy",
+  "graphviz",
+]
 
 [project.scripts]
-food101-train = "food101.train:main"
-food101-infer = "food101.infer:main"
-food101-app   = "food101.app:main"
+# CLI entry points that correspond to src/train.py, src/eval.py, src/infer.py
+food101-train = "train:main"
+food101-eval  = "eval:main"
+food101-infer = "infer:main"
+
+[tool.setuptools]
+# Source layout: Python modules live under src/
+package-dir = { "" = "src" }
+
+# Flat modules at src/ that should be installed as top-level modules
+py-modules = [
+  "config",
+  "data",
+  "engine",
+  "eval",
+  "infer",
+  "model",
+  "styles",
+  "train",
+  "utils",
+]

@@ -1,6 +1,5 @@
 import os
 import sys
-import textwrap
 import subprocess
 import yaml
 from PIL import Image

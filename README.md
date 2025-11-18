@@ -170,6 +170,10 @@ Minimum keys expected in the YAMLs:
 
 ### Build and run
 
+You can either build the image locally or use the prebuilt image published on Docker Hub.
+
+### Option 1: Build and run locally
+
 ```bash
 docker compose up --build
 ```
@@ -180,15 +184,23 @@ Run in background:
 docker compose up -d
 ```
 
+### Option 2: Use the prebuilt image
+
+Pull the latest image:
+
+```bash
+docker pull kevinhuads/deepvision-workflow:latest
+```
+
+Run it directly:
+
+```bash
+docker run --rm -p 8501:8501  "kevinhuads/deepvision-workflow:latest" 
+```
+
 ### Access
 
 Open [http://localhost:8501](http://localhost:8501) to access the Streamlit app.
-
-### Stop
-
-```bash
-docker compose down
-```
 
 ## Testing
 
