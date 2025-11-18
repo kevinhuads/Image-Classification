@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: image-classification:local
+    image: deepvision-workflow:local
     ports:
       - "8501:8501"
     environment:

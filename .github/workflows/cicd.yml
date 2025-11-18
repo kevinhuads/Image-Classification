@@ -63,7 +63,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/image-classification:latest
-            ${{ secrets.DOCKER_USERNAME }}/image-classification:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/deepvision-workflow:latest
+            ${{ secrets.DOCKER_USERNAME }}/deepvision-workflow:${{ github.sha }}
       
   
