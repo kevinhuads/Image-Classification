@@ -7,7 +7,7 @@ name = "deepvision-workflow"
 version = "0.1.0"
 description = "End-to-end Food-101 image classification workflow: training, evaluation, experiment tracking, and demo."
 readme = "README.md"
-requires-python = "==3.11"
+requires-python = "==3.11.*"
 
 authors = [
   { name = "Kevin Hua", email = "kevin.hua.ds@gmail.com" }

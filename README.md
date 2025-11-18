@@ -10,6 +10,10 @@ The project combines:
 - A **benchmark of modern architectures** (CNNs and Vision Transformers) under both frozen-backbone and full fine-tuning regimes.
 - An **MLOps-ready stack** for training, tracking and deployment.
 
+### Live demo
+A hosted version of the application is available on Hugging Face Spaces.  
+It runs as a Docker Space built from the same container image defined in this repository: https://kevinhuads-deepvision-workflow.hf.space/
+
 ## High-level results and model choices
 
 The main experimental results are presented in the notebooks:
@@ -70,6 +74,20 @@ The notebooks and training scripts assume this layout under a configurable `data
 ├─ src/                    # Source code (training, evaluation, inference, app)
 └─ tests/                  # Test suite
 ```
+
+### Source code overview (`src/`)
+
+- `app.py` - Streamlit web application for interactive Food-101 predictions and project overview.
+- `config.py` - Utilities for loading YAML configuration, merging with CLI arguments, resolving paths, and selecting device / seeds.
+- `data.py` - Helpers to read Food-101 splits, build preprocessing transforms, and construct train/validation/test datasets.
+- `engine.py` - Core training and validation loops, metric computation, calibration analysis, and artifact logging.
+- `eval.py` - Standalone script to evaluate a trained checkpoint on the Food-101 test split and generate summary plots/files.
+- `infer.py` - Command line entry point for single image inference, combining YAML configuration, model loading and top-k prediction printing.
+- `model.py` - Model factory that instantiates CNN and transformer backbones and replaces their classifier heads for Food-101.
+- `styles.py` - CSS definitions used to theme the Streamlit demo interface.
+- `train.py` - Command line training entry point that wires together config, data pipeline, model creation, engine, and MLflow logging.
+- `utils.py` - Inference utilities for loading models and metadata, applying preprocessing, and computing top-k predictions from images.
+
 
 ## Getting Started
 
